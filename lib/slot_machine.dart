@@ -20,7 +20,7 @@ class _SlotMachineState
     'assets/images/seven.png',
   ];
   var _isMuted = false;
-  var _backgroundStarted = false;
+  //var _backgroundStarted = false;
 
   var _coins = 10;
   var _slot1 = 'assets/images/cherry.png';
@@ -57,16 +57,16 @@ class _SlotMachineState
 
   Future<void> _spin() async {
     if (_coins <= 0 || _isSpinning) return;
-    SoundService.playClick();
+    await SoundService.playClick();
 
     setState(() {
       _isSpinning = true;
       _message = '';
     });
-    if(!_backgroundStarted) {
-      SoundService.playBackground();
-      _backgroundStarted =  true;
-    }
+    // if(!_backgroundStarted) {
+    //  await SoundService.playBackground();
+    //   _backgroundStarted =  true;
+    // }
     final result1 = await _spinReel(
       totalTicks: 10,
       onTick: (val) =>
@@ -85,28 +85,27 @@ class _SlotMachineState
     await Future.delayed(
       Duration(milliseconds: 300),
     );
-    setState(() {
-      _isSpinning = false;
+      String newMessage;
+      int coinsChange;
 
       if (result1 == result2 &&
           result2 == result3) {
         if (result1 ==
             'assets/images/seven.png') {
-          _coins += 10;
+          coinsChange = 10;
           _message = 'ДЖЕКПОТ! 🎰🎰🎰 +10 монет';
-          SoundService.playJackpot();
+          await SoundService.playJackpot();
         } else {
-          _coins += 3;
-          _message = 'Победа! 🎉 +3 монеты';
-          SoundService.playWin();
+          coinsChange = 3;
+          newMessage = 'Победа! 🎉 +3 монеты';
+          await SoundService.playWin();
         }
       } else {
-        _coins -= 1;
-        _message =
+        coinsChange = -1;
+        newMessage =
             'Попробуй ещё раз 😔 -1 монета';
-        SoundService.playLose();
+        await SoundService.playLose();
       }
-    });
   }
 
   void _reset() {
