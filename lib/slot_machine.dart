@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:slot_machine/slot_row.dart';
+import 'sound_service.dart';
 
 class SlotMachine extends StatefulWidget {
   const SlotMachine({super.key});
@@ -18,6 +19,8 @@ class _SlotMachineState
     'assets/images/lemon.png',
     'assets/images/seven.png',
   ];
+  var _isMuted = false;
+  var _backgroundStarted = false;
 
   var _coins = 10;
   var _slot1 = 'assets/images/cherry.png';
@@ -54,11 +57,16 @@ class _SlotMachineState
 
   Future<void> _spin() async {
     if (_coins <= 0 || _isSpinning) return;
+    SoundService.playClick();
 
     setState(() {
       _isSpinning = true;
       _message = '';
     });
+    if(!_backgroundStarted) {
+      SoundService.playBackground();
+      _backgroundStarted =  true;
+    }
     final result1 = await _spinReel(
       totalTicks: 10,
       onTick: (val) =>
@@ -86,14 +94,17 @@ class _SlotMachineState
             'assets/images/seven.png') {
           _coins += 10;
           _message = 'ДЖЕКПОТ! 🎰🎰🎰 +10 монет';
+          SoundService.playJackpot();
         } else {
           _coins += 3;
           _message = 'Победа! 🎉 +3 монеты';
+          SoundService.playWin();
         }
       } else {
         _coins -= 1;
         _message =
             'Попробуй ещё раз 😔 -1 монета';
+        SoundService.playLose();
       }
     });
   }
@@ -109,11 +120,43 @@ class _SlotMachineState
     });
   }
 
+  void _toggleMute() {
+    SoundService.toggleMute();
+    setState(() {
+      _isMuted = SoundService.isMuted;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    SoundService.playBackground();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        Align(
+          alignment: Alignment.topRight,
+          child: Padding(
+            padding: EdgeInsets.only(
+              right: 16,
+              top: 8,
+            ),
+            child: IconButton(
+              onPressed: _toggleMute,
+              icon: Icon(
+                _isMuted
+                    ? Icons.volume_off
+                    : Icons.volume_up,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+          ),
+        ),
         Text(
           '💰 Монеты: $_coins',
           style: TextStyle(
@@ -129,34 +172,40 @@ class _SlotMachineState
             slot1: _slot1,
             slot2: _slot2,
             slot3: _slot3,
-          ), 
-        ), 
+          ),
+        ),
 
         SizedBox(height: 24),
         SizedBox(
-  height: 36,
-  child: AnimatedSwitcher(
-    duration: Duration(milliseconds: 400),
-    child: Text(
-      _isSpinning ? '🎰 Крутим...' : _message,
-      key: ValueKey(
-        _isSpinning ? 'spinning' : _message,
-      ), 
-      style: TextStyle(
-        fontSize: 20,
-        color: Colors.white,
-        fontWeight: _message.contains('ДЖЕКПОТ')
-            ? FontWeight.bold
-            : FontWeight.normal,
-      ), 
-    ), 
-  ), 
-), 
+          height: 36,
+          child: AnimatedSwitcher(
+            duration: Duration(milliseconds: 400),
+            child: Text(
+              _isSpinning
+                  ? '🎰 Крутим...'
+                  : _message,
+              key: ValueKey(
+                _isSpinning
+                    ? 'spinning'
+                    : _message,
+              ),
+              style: TextStyle(
+                fontSize: 20,
+                color: Colors.white,
+                fontWeight:
+                    _message.contains('ДЖЕКПОТ')
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+              ),
+            ),
+          ),
+        ),
 
         SizedBox(height: 40),
         ElevatedButton(
-          onPressed: _coins > 0 && !_isSpinning 
-          ?_spin : null,
+          onPressed: _coins > 0 && !_isSpinning
+              ? _spin
+              : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.amber,
             padding: EdgeInsets.symmetric(
